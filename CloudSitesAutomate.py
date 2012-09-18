@@ -25,7 +25,6 @@ class Account(object):
     # Constants
     baseURL = 'https://manage.rackspacecloud.com'
 
-
     def __init__(self):
         """ INIT for CloudSites (what to put here?)
         """
@@ -35,7 +34,6 @@ class Account(object):
         self.cronList = { }
         self.clientList = None
         self.authenticated = False
-        
         return
 
     def _isLoginPage(self, duringLogin = False):
@@ -52,7 +50,6 @@ class Account(object):
             Open a page on Rackspace Cloud Sites, verify we didn't get "timed out"
 
             path - path to open
-            
         """
         # First, attempt to figure out what "path" was, and construct a URL
         if path.startswith('http'):
@@ -122,14 +119,11 @@ class Account(object):
         b.open(self.baseURL + "/Logout.do") # don't use _openPath() for this
         # Don't think it really needs to be tested?
         return
-       
 
     def _parseForJsVar(self,varName='listTableArgs'):
         """ Parse the HTML output of the current browser page for a specific
         JavaScript (JSON) variable. This is probably very specific to the way Rackspace
         formats their page.
-
-        NOTE: No checking is done to see if the data is there (FIXME)
 
         Args:
             varName = variable name to look for
@@ -155,8 +149,6 @@ class Account(object):
         """ Parse the HTML output of the *current* browser page for a specific
         JavaScript (JSON) variable. This is probably very specific to the way Rackspace
         formats their page. This will find a portion of the json object, usually tableData0.
-
-        NOTE: No checking is done to see if the data is there (FIXME)
 
         RETURN: json object representing the JSON parsed screen
         """
@@ -204,12 +196,12 @@ class Account(object):
 
 ### I should probably have a "Client" class here
 ###class Client(Account):
-    
+
     def getWebsiteList(self,clientID):
         """ Get the websites configured for this client
         """
         if not self.authenticated:
-            raise CloudSitesError("Please use login('username', 'password') method first")        
+            raise CloudSitesError("Please use login('username', 'password') method first")
         # maybe it would be better to find/click a link rather than constructing a URL?
         self._openPath('/ClientWebsiteList.do?accountID=' + clientID + '&pageTitle=ClientName')
         data = self._parseForJsVarPart('tableData0')
@@ -217,7 +209,6 @@ class Account(object):
         # There is other information in tableData0, but all we want is the client rows for now
         self.websiteList[clientID] = data['rows']
         return data['rows']
-
 
     def displayWebsites(self,clientID):
         """ Display a Simple List of websites for a specific client (for testing)
@@ -243,7 +234,7 @@ class Account(object):
         """ Get the websites configured for this client
         """
         if not self.authenticated:
-            raise CloudSitesError("Please use login('username', 'password') method first")        
+            raise CloudSitesError("Please use login('username', 'password') method first")
         # maybe it would be better to find/click a link rather than constructing a URL?
         self._openPath('/WebsiteFeatures.do?accountID=' + clientID + '&siteID=' + websiteID+ '&pageTitle=WebsiteName')
         ##DOESNT WORK##data = self._parseForJsVar('listTableArgs')
@@ -256,7 +247,6 @@ class Account(object):
         self.cronList[websiteID] = cronList
         ###self.websiteList[clientID] = data['rows']
         return (dbList, cronList)
-
 
     def displayDatabases(self,clientID,websiteID):
         """ Display a Simple List of Databases for a specific website (for testing)
@@ -274,7 +264,6 @@ class Account(object):
             print
         return
 
-
     def displayCronJobs(self,clientID,websiteID):
         """ Display a Simple List of cron jobs for a specific client (for testing)
         """
@@ -289,3 +278,4 @@ class Account(object):
             print 'URL: ' + self.baseURL + job[2][1]
             print
         return
+

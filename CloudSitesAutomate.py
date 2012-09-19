@@ -31,6 +31,7 @@ class Account(object):
         self.browser = mechanize.Browser()
         self.websiteList = { }
         self.databaseList = { }
+        self.databaseDetail = { }
         self.cronList = { }
         self.clientList = None
         self.authenticated = False
@@ -95,7 +96,6 @@ class Account(object):
             return False
         elif ( b.geturl() == (self.baseURL + '/Home.do') ):
             # May just need to be an empty "else" here?
-            # You are logged in as: <strong>deliveryagent</strong>, Delivery Agent (#603513)
             # Ugly Part - Parse the output to see if we are logged in or not
             html = resp.read()
             match = re.search(r'You are logged in as: \<strong\>(?P<username>\w+?)\</strong\>,\s+(?P<accountName>[\w\s]+?) \(\#(?P<rsAccountID>\d+)\)', html)
@@ -117,7 +117,8 @@ class Account(object):
         """
         b = self.browser
         b.open(self.baseURL + "/Logout.do") # don't use _openPath() for this
-        # Don't think it really needs to be tested?
+        # Reset all variables to the initial state (call __init__())
+        self.__init__()
         return
 
     def _parseForJsVar(self,varName='listTableArgs'):
@@ -231,7 +232,8 @@ class Account(object):
 ###class Website(Client)
 
     def getFeaturesForWebsite(self,clientID,websiteID):
-        """ Get the websites configured for this client
+        """ Get the Features configured on this website
+            Features Include: databases, cronJobs, etc
         """
         if not self.authenticated:
             raise CloudSitesError("Please use login('username', 'password') method first")
@@ -279,3 +281,45 @@ class Account(object):
             print
         return
 
+    def getDatabaseDetail(self,websiteID,databaseName,serverID):
+        """ Get the database details including server, users, etc
+        """
+        if not self.authenticated:
+            raise CloudSitesError("Please use login('username', 'password') method first")
+        # maybe it would be better to find/click a link rather than constructing a URL?
+        self._openPath('/ViewDatabase.do?siteID=' + websiteID+ '&pageTitle=WebsiteName&databaseName='
+                       + databaseName + '&serverId=' + serverID)
+        # Things are about to get *ugly* 
+        matches = re.search(r'<td class="itemName".*?>\s*(?P<itemName>[\w\s]*?)\s*</td>' +
+	  r'.*?<td class="item".*?>\s*(?P<itemValue>[\w\s]*?)\s*</td>', html, re.MULTILINE|re.DOTALL)
+        if matches:
+            self.databaseDetail[databaseName] = { }
+            for itemName, itemValue in matches:
+                if (itemValue.find('<')>=0):
+                    # Strip out the extra stuff we don't want
+                    itemValue = re.search('(?:<.*?>)?(?P<value>[\w\d\-_\.\:\/]*)<', itemValue).group(1)
+                self.databaseDetail[databaseName][itemName]=itemValue
+        else:
+            raise CloudSitesError("Error Parsing Database Details")
+        self.databaseDetail[databaseName]['userList'] = self._parseForJsVarPart('tableData0')['rows']
+        return self.databaseDetail[databaseName]
+
+    def displayDatabaseDetail(self,databaseName):
+        """ Display database detail for a specific database (for testing)
+        """
+        if databaseName not in self.databseDetail: # Attempt to get it
+            #self.getDatabaseDetail(websiteID)
+            raise CloudSitesError("ERROR: use getDatabseDetail() first")
+        for itemName, itemValue in self.databaseDetail[databaseName].items():
+            if (itemName != 'userList'):
+                print itemName + ": " + itemValue
+        print
+        for user in iter(self.databaseDetail[databaseName]['userList']):
+            # user[0] is a list ['userName', '', '']
+            # user[1] is a number (index?)
+            # user[2] is a list containing ['userName', 'url']
+            print 'UserName: ' + user[2][0]
+            print 'URL: ' + self.baseURL + user[2][1]
+            print
+        return
+        

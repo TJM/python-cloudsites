@@ -98,7 +98,7 @@ class Account(object):
             # May just need to be an empty "else" here?
             # Ugly Part - Parse the output to see if we are logged in or not
             html = resp.read()
-            match = re.search(r'You are logged in as: \<strong\>(?P<username>\w+?)\</strong\>,\s+(?P<accountName>[\w\s]+?) \(\#(?P<rsAccountID>\d+)\)', html)
+            match = re.search(r'You are logged in as: \<strong\>(?P<username>\w+?)\</strong\>,\s+(?P<accountName>.+?) \(\#(?P<rsAccountID>\d+)\)', html)
             self.accountLogin = match.group(1)
             self.accountName = match.group(2)
             self.accountID = match.group(3)

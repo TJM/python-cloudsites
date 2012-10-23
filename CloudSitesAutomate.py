@@ -201,8 +201,12 @@ class Account(object):
     def getWebsiteList(self,clientID):
         """ Get the websites configured for this client
         """
+        # Ensure we are authenticated
         if not self.authenticated:
             raise CloudSitesError("Please use login('username', 'password') method first")
+        # Argument Cleaning
+        clientID = str(clientID)
+
         # maybe it would be better to find/click a link rather than constructing a URL?
         self._openPath('/ClientWebsiteList.do?accountID=' + clientID + '&pageTitle=ClientName')
         data = self._parseForJsVarPart('tableData0')
@@ -214,6 +218,12 @@ class Account(object):
     def displayWebsites(self,clientID):
         """ Display a Simple List of websites for a specific client (for testing)
         """
+        # Ensure we are authenticated
+        if not self.authenticated:
+            raise CloudSitesError("Please use login('username', 'password') method first")
+        # Argument Cleaning
+        clientID = str(clientID)
+
         if clientID not in self.websiteList: # Attempt to get it
             self.getWebsiteList(clientID)
         for website in iter(self.websiteList[clientID]):
@@ -235,6 +245,13 @@ class Account(object):
         """ Get the Features configured on this website
             Features Include: databases, cronJobs, etc
         """
+        # Ensure we are authenticated
+        if not self.authenticated:
+            raise CloudSitesError("Please use login('username', 'password') method first")
+        # Argument Cleaning
+        clientID = str(clientID)
+        websiteID = str(websiteID) 
+
         if not self.authenticated:
             raise CloudSitesError("Please use login('username', 'password') method first")
         # maybe it would be better to find/click a link rather than constructing a URL?
@@ -253,6 +270,13 @@ class Account(object):
     def displayDatabases(self,clientID,websiteID):
         """ Display a Simple List of Databases for a specific website (for testing)
         """
+        # Ensure we are authenticated
+        if not self.authenticated:
+            raise CloudSitesError("Please use login('username', 'password') method first")
+        # Argument Cleaning
+        clientID = str(clientID)
+        websiteID = str(websiteID)
+
         if clientID not in self.databaseList: # Attempt to get it
             self.getFeaturesForWebsite(clientID,websiteID)
         for db in iter(self.databaseList[websiteID]):
@@ -269,6 +293,13 @@ class Account(object):
     def displayCronJobs(self,clientID,websiteID):
         """ Display a Simple List of cron jobs for a specific client (for testing)
         """
+        # Ensure we are authenticated
+        if not self.authenticated:
+            raise CloudSitesError("Please use login('username', 'password') method first")
+        # Argument Cleaning
+        clientID = str(clientID)
+        websiteID = str(websiteID)
+        
         if clientID not in self.cronList: # Attempt to get it
             self.getFeaturesForWebsite(clientID,websiteID)
         for job in iter(self.cronList[websiteID]):
@@ -284,8 +315,14 @@ class Account(object):
     def getDatabaseDetail(self,websiteID,databaseName,serverID):
         """ Get the database details including server, users, etc
         """
+        # Ensure we are authenticated
         if not self.authenticated:
             raise CloudSitesError("Please use login('username', 'password') method first")
+        # Argument Cleaning
+        websiteID = str(websiteID)
+        databaseName = str(databaseName)
+        serverID = str(serverID)
+        
         # maybe it would be better to find/click a link rather than constructing a URL?
         self._openPath('/ViewDatabase.do?siteID=' + websiteID+ '&pageTitle=WebsiteName&databaseName='
                        + databaseName + '&serverId=' + serverID)
@@ -307,6 +344,14 @@ class Account(object):
     def displayDatabaseDetail(self,databaseName):
         """ Display database detail for a specific database (for testing)
         """
+        # Ensure we are authenticated
+        if not self.authenticated:
+            raise CloudSitesError("Please use login('username', 'password') method first")
+        # Argument Cleaning
+        websiteID = str(websiteID)
+        databaseName = str(databaseName)
+        serverID = str(serverID)
+        
         if databaseName not in self.databseDetail: # Attempt to get it
             #self.getDatabaseDetail(websiteID)
             raise CloudSitesError("ERROR: use getDatabseDetail() first")

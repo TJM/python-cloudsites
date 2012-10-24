@@ -403,7 +403,8 @@ class Database(CloudSitesCommon):
         self.name = str(name)
         self.dbType = str(dbType)
         self.url = str(url)
-        self.databaseDetail = { }
+        self.detail = { }
+        self.users = { }
         self.browser = website.browser
         return
     
@@ -412,8 +413,13 @@ class Database(CloudSitesCommon):
         """
 
         self._openPath(self.url)
+        self._parseDatabaseDetail(self.browser.response().read())
+        return self.detail
+
+    def _parseDatabaseDetail(self, html):
+        """ Parse the database detail out of the html and store in self.detail
+        """
         # Things are about to get *ugly*
-        html = self.browser.response().read()
         matches = re.findall(r'<td class="itemName".*?>\s*(?P<itemName>[\w\s]*?)\s*</td>' +
 	  r'.*?<td class="item".*?>\s*(?P<itemValue>.*?)\s*<[^a]', html, re.MULTILINE|re.DOTALL)
         if matches:
@@ -421,28 +427,131 @@ class Database(CloudSitesCommon):
                 if (itemValue.find('href=')>=0):
                     # Pull href value out of link code
                     itemValue = re.search(r'href="(?P<url>.*?)"', itemValue).group(1)
-                self.databaseDetail[itemName]=itemValue
+                self.detail[itemName]=itemValue
         else:
             raise CloudSitesError("Error Parsing Database Details")
-        self.databaseDetail['userList'] = self._parseForJsVarPart('tableData0')['rows']
-        return self.databaseDetail
+        userData = self._parseForJsVarPart('tableData0')['rows']
+        for user in iter(userData):
+            # user[0] is a list ['userName', '', '']
+            # user[1] is a number (index?)
+            # user[2] is a list containing ['userName', 'url']
+            userName = user[2][0]
+            userUrl = user[2][1]
+            self.users[userName] = userUrl        
+        return
 
     def displayDetail(self):
         """ Display database detail for a specific database (for testing)
         """
 
-        if not self.databaseDetail: # Attempt to get it
-            self.getDatabaseDetail()
-        for itemName, itemValue in self.databaseDetail.items():
+        if not self.detail: # Attempt to get it
+            self.getDetail()
+        for itemName, itemValue in self.detail.items():
             if (itemName != 'userList'):
                 print itemName + ": " + itemValue
         print
-        for user in iter(self.databaseDetail['userList']):
-            # user[0] is a list ['userName', '', '']
-            # user[1] is a number (index?)
-            # user[2] is a list containing ['userName', 'url']
-            print 'UserName: ' + user[2][0]
-            print 'URL: ' + self.baseURL + user[2][1]
+        for userName in self.users.keys():
+            # user -> url
+            print 'UserName: ' + userName
+            print 'URL: ' + self.baseURL + self.users[userName]
             print
         return
+
+    def createUser(self, username, password):
+        """ Create a database user for this database
+            ARGS:
+                - username = Database Username (not including the customerid_ part) [a-z 0-9] (max 8 chars)
+                - password = Password for Database User (min 8 chars, max 128 chars)
+        """
+        username = str(username)
+        password = str(password)
+
+        if len(username) > 8 or len(username) < 1:
+            raise CloudSitesError("Username must be between 1 and 8 chars")
+            return False
+
+        if len(password) < 8 or len(password) > 128:
+            raise CloudSitesError("Username must be between 1 and 8 chars")
+            return False
+
+        # We could do validation of the username/password, but it would be better to just let rackspace fail it for now
+
+        # Open the Database Page and fill out the "DatabaseForm" (add user form)
+        self._openPath(self.url)
+        b = self.browser
+        b.select_form(name='DatabaseForm')
+        b.form['databaseUsername'] = username
+        b.form['databasePassword'] = password
+        b.form['databasePasswordConfirm'] = password
+        r = b.submit()
+        html = r.read()
+        match = re.search(r'error has occurred',html)
+        if match:
+            raise CloudSitesError("Error adding user")
+            return False
+        self._parseDatabaseDetail(html)
+        return True
+
+    def _NYI_deleteUser(self, username):
+        """ Delete a database user for this database
+            ARGS:
+                - username = Database Username (including the customerid_ part) [a-z 0-9] (max 8 chars)
+        """
+        username = str(username)
+
+        if len(username) > 8 or len(username) < 1:
+            raise CloudSitesError("Username must be between 1 and 8 chars")
+            return False
+
+        if username not in self.users:
+            raise CloudSitesError("Username " + username + " not found")
+            return False
+
+        ### NOT YET IMPLEMENTED
+        raise CloudSitesError("deleteUser is not yet implemented")
+
+
+        # Open the Database Page and fill out the "DeleteUser" form (doesn't appear to have a name)
+        b = self.browser
+        self._openPath(self.url)
+        for form in b.forms():
+            if (form.action.startswith(self.baseURL + '/DeleteDatabaseUsers.do')):
+                break
+        ## FIXME: This is not right
+        #b.form['usernames'][username].selected = True
+        return False
+
+    def changePassword(self, username, password):
+        """ Change password for a database user for this database
+            ARGS:
+                - username = Database Username (not including the customerid_ part) [a-z 0-9] (max 8 chars)
+                - password = New Password for Database User (min 8 chars, max 128 chars)
+        """
+        username = str(username)
+        password = str(password)
+
+        if username not in self.users:
+            raise CloudSitesError("Username " + username + " not found")
+            return False
+
+        if len(password) < 8 or len(password) > 128:
+            raise CloudSitesError("Username must be between 1 and 8 chars")
+            return False
+        
+        # We could do validation of the password, but it would be better to just let rackspace fail it for now
+
+        # Open the Database Page and fill out the "DatabaseForm"
+        self._openPath(self.users[username])
+        b = self.browser
+        b.select_form(name='DatabaseForm')
+        b.form['databasePassword'] = password
+        b.form['databasePasswordConfirm'] = password
+        r = b.submit()
+        html = r.read()
+        match = re.search(r'error has occurred',html)
+        if match:
+            raise CloudSitesError("Error adding user")
+            return False
+        self._parseDatabaseDetail(html)
+        return True
 

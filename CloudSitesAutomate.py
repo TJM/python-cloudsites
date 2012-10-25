@@ -9,6 +9,7 @@ Rackspace Cloud Sites Automation Library
 import mechanize
 import re
 import json
+import urllib
 
 
 
@@ -42,6 +43,8 @@ class CloudSitesCommon(object):
             url = self.baseURL + path
         else: # assume they forgot the /
             url = self.baseURL + '/' + path
+        # Sanitize
+        url = urllib.quote_plus(url,safe="%/:=&?~#+!$,;'@()*[]")
         # Actually Open the URL
         self.browser.open(url)
         # Attempt to determine if we have ended up at the Login Page
@@ -287,7 +290,6 @@ class Client(CloudSitesCommon):
         """
         websiteID = str(websiteID)
         return self.websites.get(websiteID)
-
 
 
 ########## Website ##########

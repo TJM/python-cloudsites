@@ -244,6 +244,7 @@ class Client(CloudSitesCommon):
         self.name = str(name)
         self.url = str(url)
         self.websites = { }
+        self.users = {}
         self.browser = account.browser
         return
     
@@ -290,6 +291,34 @@ class Client(CloudSitesCommon):
         """
         websiteID = str(websiteID)
         return self.websites.get(websiteID)
+
+    def getUserList(self):
+        """ Get the (S)FTP users configured for this client
+        """
+
+        url = self.url.replace('/ClientSettings.do', '/FTPSettings.do', 1)
+        self._openPath(url)
+        data = self._parseForJsVarPart('tableData0')
+        # data['rows'] - list of users
+        # There is other information in tableData0, but all we want is the client rows for now
+        for user in iter(data['rows']):
+            # user[0] is a list containing ['UserID', '', 'disabled']
+            # user[1] is "username"
+            # user[2] is "Full Name" (Primary User)
+            # user[3] is "(javaScript stuff to show/change password"
+            # user[4] is "accessLevel" (/)
+            userID = user[0][0]
+            userName = user[1]
+            name = user[2]
+            accessLevel = user[4]
+            self.users[userName] = (userID, name, accessLevel)
+        return self.users.keys()
+
+
+
+
+    ## NOTE: Change Password and Delete user are "javascript" functions, so they will need to be "faked" if we need to implement them.
+
 
 
 ########## Website ##########

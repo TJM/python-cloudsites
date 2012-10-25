@@ -240,17 +240,18 @@ class Client(CloudSitesCommon):
         self.clientID = str(clientID)
         self.name = str(name)
         self.url = str(url)
-        self.websiteList = { }
+        self.websites = { }
         self.browser = account.browser
         return
-
-
+    
     def getWebsiteList(self):
         """ Get the websites configured for this client
         """
 
+        url = self.url.replace('/ClientSettings.do', '/ClientWebsiteList.do', 1)
+        self._openPath(url)
         # maybe it would be better to find/click a link rather than constructing a URL?
-        self._openPath('/ClientWebsiteList.do?accountID=' + self.clientID + '&pageTitle=ClientName')
+        #self._openPath('/ClientWebsiteList.do?accountID=' + self.clientID + '&pageTitle=ClientName')
         data = self._parseForJsVarPart('tableData0')
         # data['rows'] - list of clients
         # There is other information in tableData0, but all we want is the client rows for now
@@ -263,16 +264,16 @@ class Client(CloudSitesCommon):
             domainName = website[2][0]
             url = website[2][1]
             name = website[3]
-            self.websiteList[websiteID] = Website(self, websiteID, name, url, domainName)
-        return self.websiteList.keys()
+            self.websites[websiteID] = Website(self, websiteID, name, url, domainName)
+        return self.websites.keys()
 
     def displayWebsites(self):
         """ Display a Simple List of websites for a specific client (for testing)
         """
 
-        if not self.websiteList: # Attempt to get it
+        if not self.websites: # Attempt to get it
             self.getWebsiteList()
-        for website in self.websiteList.itervalues():
+        for website in self.websites.itervalues():
             # website - Website object
             print 'WebsiteID: ' + website.websiteID
             print 'Website Name: ' + website.name
@@ -285,7 +286,7 @@ class Client(CloudSitesCommon):
         """ Obtain a specific website object with the websiteID
         """
         websiteID = str(websiteID)
-        return self.websiteList.get(websiteID)
+        return self.websites.get(websiteID)
 
 
 
@@ -301,7 +302,7 @@ class Website(CloudSitesCommon):
                     - client - link back to parent client object
                     - websiteID - represents websiteID in URLs
                     - name - Website Name (used in URLs)
-                    - URL - URL to bring up website details
+                    - url - URL to bring up website settings
                     - domainName - domain name for the website
         """
         self.client = client
@@ -320,8 +321,10 @@ class Website(CloudSitesCommon):
             Features Include: databases, cronJobs, etc
         """
 
+        url = self.url.replace('/WebsiteSettings.do', '/WebsiteFeatures.do', 1)
+        self._openPath(url)
         # maybe it would be better to find/click a link rather than constructing a URL?
-        self._openPath('/WebsiteFeatures.do?accountID=' + self.clientID + '&siteID=' + self.websiteID+ '&pageTitle=websiteName')
+        #self._openPath('/WebsiteFeatures.do?accountID=' + self.clientID + '&siteID=' + self.websiteID+ '&pageTitle=websiteName')
         ##DOESNT WORK##
         #data = self._parseForJsVar('listTableArgs')
         # data['tableData0'] -> databases
@@ -342,7 +345,6 @@ class Website(CloudSitesCommon):
 
         self.cronList = cronList
 
-        ###self.websiteList[clientID] = data['rows']
         return (self.databaseList.keys(), cronList)
 
     def displayDatabases(self):
@@ -508,6 +510,8 @@ class Database(CloudSitesCommon):
             return False
 
         ### NOT YET IMPLEMENTED
+        ### REASON: the "controls" (checkboxes) to delete users are created with javascript, which is not being processed here
+        ### --- will have to fake it to make it work :P
         raise CloudSitesError("deleteUser is not yet implemented")
 
 

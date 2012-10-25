@@ -317,8 +317,39 @@ class Client(CloudSitesCommon):
             self.users[userName] = (userID, name, accessLevel)
         return self.users.keys()
 
+    def createUser(username, password):
+        """ Create a database user for this database
+            ARGS:
+                - username = Username (login) [a-z 0-9] (max 16 chars)
+                - password = Password for User (min 8 chars, max 128 chars)
+        """
+        username = str(username)
+        password = str(password)
 
+        if len(username) > 8 or len(username) < 1:
+            raise CloudSitesError("Username must be between 1 and 16 chars")
+            return False
 
+        if len(password) < 8 or len(password) > 128:
+            raise CloudSitesError("Password must be between 8 and 128 chars")
+            return False
+
+        # We could do validation of the username/password, but it would be better to just let rackspace fail it for now
+
+        url = self.url.replace('/ClientSettings.do', '/FTPSettings.do', 1)
+        self._openPath(url)
+        b = self.browser
+        b.select_form(name='addNewUserForm')
+        b.submit()
+        b.select_form(name='SaveNewUserForm')
+        b.form['username'] = username
+        b.form['password'] = password
+        b.form['passwordConfirm'] = password
+        # Not sure how to fill out the "access level, hopefully it defaults to something useful
+        b.submit()
+        ### BROKE! There is a captcha here, burned!
+
+        
 
     ## NOTE: Change Password and Delete user are "javascript" functions, so they will need to be "faked" if we need to implement them.
 
@@ -507,7 +538,7 @@ class Database(CloudSitesCommon):
             return False
 
         if len(password) < 8 or len(password) > 128:
-            raise CloudSitesError("Username must be between 1 and 8 chars")
+            raise CloudSitesError("Password must be between 8 and 128 chars")
             return False
 
         # We could do validation of the username/password, but it would be better to just let rackspace fail it for now
@@ -534,10 +565,6 @@ class Database(CloudSitesCommon):
                 - username = Database Username (including the customerid_ part) [a-z 0-9] (max 8 chars)
         """
         username = str(username)
-
-        if len(username) > 8 or len(username) < 1:
-            raise CloudSitesError("Username must be between 1 and 8 chars")
-            return False
 
         if username not in self.users:
             raise CloudSitesError("Username " + username + " not found")
@@ -573,7 +600,7 @@ class Database(CloudSitesCommon):
             return False
 
         if len(password) < 8 or len(password) > 128:
-            raise CloudSitesError("Username must be between 1 and 8 chars")
+            raise CloudSitesError("Password must be between 8 and 128 chars")
             return False
         
         # We could do validation of the password, but it would be better to just let rackspace fail it for now

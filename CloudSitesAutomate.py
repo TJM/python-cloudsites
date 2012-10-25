@@ -30,7 +30,7 @@ class CloudSitesCommon(object):
                 return True
         return False
 
-    def _openPath(self, path):
+    def _openPath(self, path, force=False):
         """
             Open a page on Rackspace Cloud Sites, verify we didn't get "timed out"
 
@@ -45,8 +45,11 @@ class CloudSitesCommon(object):
             url = self.baseURL + '/' + path
         # Sanitize
         url = urllib.quote_plus(url,safe="%/:=&?~#+!$,;'@()*[]")
-        # Actually Open the URL
-        self.browser.open(url)
+        # If the current URL is not the same as the one we want to open
+        # ... or if we want to "force" opening (reopening?)
+        if (self.browser.request.get_full_url != url) or force:
+            # Actually Open the URL
+            self.browser.open(url)
         # Attempt to determine if we have ended up at the Login Page
         if (self._isLoginPage()):
             raise CloudSitesError("ERROR: Session Timed Out or failed")
